@@ -16,6 +16,7 @@ import (
 
 // readBool reads a bool.
 func (c *Config) readBool(prompt string, defaultValue *bool) (bool, error) {
+	c.waitDiffPager()
 	switch {
 	case c.noTTY:
 		fullPrompt := prompt
@@ -51,6 +52,7 @@ func (c *Config) readBool(prompt string, defaultValue *bool) (bool, error) {
 
 // readChoice reads a choice.
 func (c *Config) readChoice(prompt string, choices []string, defaultValue *string) (string, error) {
+	c.waitDiffPager()
 	switch {
 	case c.noTTY:
 		fullPrompt := prompt + " (" + strings.Join(choices, "/")
@@ -87,6 +89,7 @@ func (c *Config) readChoice(prompt string, choices []string, defaultValue *strin
 
 // readInt reads an int.
 func (c *Config) readInt(prompt string, defaultValue *int64) (int64, error) {
+	c.waitDiffPager()
 	switch {
 	case c.noTTY:
 		fullPrompt := prompt
@@ -122,6 +125,7 @@ func (c *Config) readInt(prompt string, defaultValue *int64) (int64, error) {
 
 // readLineRaw reads a line, trimming leading and trailing whitespace.
 func (c *Config) readLineRaw(prompt string) (string, error) {
+	c.waitDiffPager()
 	_, err := c.stdout.Write([]byte(prompt))
 	if err != nil {
 		return "", err
@@ -138,6 +142,7 @@ func (c *Config) readLineRaw(prompt string) (string, error) {
 
 // readMultichoice reads multiple choices from a list.
 func (c *Config) readMultichoice(prompt string, choices []string, defaultValue *[]string) ([]string, error) {
+	c.waitDiffPager()
 	switch {
 	case c.noTTY:
 		shortPrompt := "Choice (ENTER to stop)> "
@@ -209,6 +214,7 @@ func (c *Config) readMultichoice(prompt string, choices []string, defaultValue *
 
 // readPassword reads a password.
 func (c *Config) readPassword(prompt, placeholder string) (string, error) {
+	c.waitDiffPager()
 	switch {
 	case c.noTTY:
 		return c.readLineRaw(prompt)
@@ -226,6 +232,7 @@ func (c *Config) readPassword(prompt, placeholder string) (string, error) {
 
 // readString reads a string.
 func (c *Config) readString(prompt string, defaultValue *string) (string, error) {
+	c.waitDiffPager()
 	switch {
 	case c.noTTY:
 		fullPrompt := prompt

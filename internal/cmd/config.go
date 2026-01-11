@@ -2170,17 +2170,7 @@ func (c *Config) finalize() {
 		}
 	}
 
-	// Wait for any diff pager process to terminate.
-	if c.diffPagerCmd != nil {
-		if err := c.diffPagerCmdStdin.Close(); err != nil {
-			c.errorf("error: failed to close diff pager stdin: %v\n", err)
-		}
-		if c.diffPagerCmd.Process != nil {
-			if err := chezmoilog.LogCmdWait(c.logger, c.diffPagerCmd); err != nil {
-				c.errorf("error: failed to wait for diff pager to close: %v\n", err)
-			}
-		}
-	}
+	c.waitDiffPager()
 
 	if c.restoreWindowsConsole != nil {
 		if err := c.restoreWindowsConsole(); err != nil {
@@ -2196,6 +2186,21 @@ func (c *Config) finalize() {
 	// Close any connection to keepassxc-cli.
 	if err := c.keepassxcClose(); err != nil {
 		c.errorf("error: failed to close connection to keepassxc-cli: %v\n", err)
+	}
+}
+
+// waitDiffPager waits for any diff pager process to terminate.
+func (c *Config) waitDiffPager() {
+	if c.diffPagerCmd != nil {
+		if err := c.diffPagerCmdStdin.Close(); err != nil {
+			c.errorf("error: failed to close diff pager stdin: %v\n", err)
+		}
+		if c.diffPagerCmd.Process != nil {
+			if err := chezmoilog.LogCmdWait(c.logger, c.diffPagerCmd); err != nil {
+				c.errorf("error: failed to wait for diff pager to close: %v\n", err)
+			}
+		}
+		c.diffPagerCmd = nil
 	}
 }
 
