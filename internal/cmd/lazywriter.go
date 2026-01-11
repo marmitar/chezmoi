@@ -1,16 +1,17 @@
 package cmd
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"sync"
 )
 
-// A lazyWriter only opens its destination on first write.
+// A lazyWriter that buffers its input and writes everything at once on close.
 type lazyWriter struct {
-	mutex       sync.Mutex
-	openFunc    func() (io.WriteCloser, error)
-	writeCloser io.WriteCloser
-	err         error
+	mutex         sync.Mutex
+	bufferedInput bytes.Buffer
+	openFunc      func() (io.WriteCloser, error)
 }
 
 func newLazyWriter(openFunc func() (io.WriteCloser, error)) *lazyWriter {
@@ -22,21 +23,31 @@ func newLazyWriter(openFunc func() (io.WriteCloser, error)) *lazyWriter {
 func (w *lazyWriter) Close() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
-	if w.writeCloser == nil {
+	if w.openFunc == nil {
+		return fmt.Errorf("lazyWriter already closed")
+	}
+	openFunc := w.openFunc
+	w.openFunc = nil
+	if w.bufferedInput.Len() == 0 {
 		return nil
 	}
-	return w.writeCloser.Close()
+	writeCloser, openErr := openFunc()
+	if openErr != nil {
+		return openErr
+	}
+	_, writeErr := w.bufferedInput.WriteTo(writeCloser)
+	closeErr := writeCloser.Close()
+	if writeErr != nil {
+		return writeErr
+	}
+	return closeErr
 }
 
 func (w *lazyWriter) Write(p []byte) (int, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
-	if w.openFunc != nil {
-		w.writeCloser, w.err = w.openFunc()
-		w.openFunc = nil
+	if w.openFunc == nil {
+		return 0, fmt.Errorf("lazyWriter already closed")
 	}
-	if w.err != nil {
-		return 0, w.err
-	}
-	return w.writeCloser.Write(p)
+	return w.bufferedInput.Write(p)
 }
