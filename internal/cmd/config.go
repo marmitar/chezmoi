@@ -2383,12 +2383,15 @@ func (c *Config) persistentPreRunRootE(cmd *cobra.Command, args []string) error 
 		default:
 			pipeReader, pipeWriter := io.Pipe()
 			pagerCmd.Stdin = pipeReader
-			lazyWriter := newLazyWriter(func() (io.WriteCloser, error) {
+			var lazyWriter io.WriteCloser = newLazyWriter(func() (io.WriteCloser, error) {
 				if err := chezmoilog.LogCmdStart(c.logger, pagerCmd); err != nil {
 					return nil, err
 				}
 				return pipeWriter, nil
 			})
+			if annotations.hasTag(modifiesDestinationDirectory) || annotations.hasTag(modifiesSourceDirectory) {
+				lazyWriter = newBufferedWriter(lazyWriter)
+			}
 			writer = lazyWriter
 			c.diffPagerCmd = pagerCmd
 			c.diffPagerCmdStdin = lazyWriter
